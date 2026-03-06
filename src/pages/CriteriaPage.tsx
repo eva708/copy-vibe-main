@@ -1,12 +1,13 @@
 import { useState, useMemo } from "react";
 import { MOCK_CRITERIA } from "@/data/mock-data";
 import { AddCriterionDialog } from "@/components/AddCriterionDialog";
+import { UploadCriteriaDialog } from "@/components/UploadCriteriaDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Filter, Plus, Trash2, Pencil } from "lucide-react";
+import { Search, Filter, Plus, Trash2, Pencil, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Criterion } from "@/types";
 import { CONTEXTS, CONTENT_TYPES, CRITERIA_TYPES, deriveCategoriesFromCriteria } from "@/config/hierarchy";
@@ -126,6 +127,7 @@ const CriteriaPage = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [criteria, setCriteria] = useState<Criterion[]>(MOCK_CRITERIA);
   const [addOpen, setAddOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [editingCriterion, setEditingCriterion] = useState<Criterion | null>(null);
 
   const categories = useMemo(() => deriveCategoriesFromCriteria(criteria), [criteria]);
@@ -154,6 +156,10 @@ const CriteriaPage = () => {
     setCriteria(prev => prev.map(c => (c.id === criterion.id ? criterion : c)));
   };
 
+  const handleUploadCriteria = (importedCriteria: Criterion[]) => {
+    setCriteria(prev => [...importedCriteria, ...prev]);
+  };
+
   const handleDialogOpenChange = (open: boolean) => {
     setAddOpen(open);
     if (!open) {
@@ -168,15 +174,24 @@ const CriteriaPage = () => {
           <h1 className="text-2xl font-bold tracking-tight">Criteria</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage evaluation criteria across contexts and categories</p>
         </div>
-        <Button
-          className="gap-2"
-          onClick={() => {
-            setEditingCriterion(null);
-            setAddOpen(true);
-          }}
-        >
-          <Plus className="h-4 w-4" /> Add Criterion
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => setUploadOpen(true)}
+          >
+            <Upload className="h-4 w-4" /> Upload Criteria
+          </Button>
+          <Button
+            className="gap-2"
+            onClick={() => {
+              setEditingCriterion(null);
+              setAddOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4" /> Create Criteria
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -293,6 +308,12 @@ const CriteriaPage = () => {
         onAdd={handleAddCriterion}
         onUpdate={handleUpdateCriterion}
         initialCriterion={editingCriterion}
+      />
+
+      <UploadCriteriaDialog
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        onUpload={handleUploadCriteria}
       />
     </div>
   );
