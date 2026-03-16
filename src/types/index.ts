@@ -31,6 +31,7 @@ export interface YesNoDefinition {
 
 export interface CountDefinition {
   buckets: string[];
+  bucket_titles?: Record<string, string>;
   bucket_definitions: Record<string, string>;
   bucket_examples?: Record<string, string[]>;
 }

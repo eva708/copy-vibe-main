@@ -36,6 +36,8 @@ type AddTagTarget =
   | { type: "branch"; branchType: "brands" | "industries" | "marketplaces" }
   | { type: "category"; contentType: string };
 
+const COUNT_BUCKETS = ["0", "1", "2", "3+"] as const;
+
 const getAddTagTargetLabel = (target: AddTagTarget) => {
   if (target.type === "branch") {
     if (target.branchType === "brands") return "Brand";
@@ -84,13 +86,19 @@ export const AddCriterionDialog = ({
     { title: "", definition: "", examples: [] },
   ]);
 
-  const [buckets] = useState(["0", "1", "2-3", "4+"]);
-  const [bucketDefs, setBucketDefs] = useState<Record<string, string>>({ "0": "", "1": "", "2-3": "", "4+": "" });
+  const [buckets] = useState<string[]>([...COUNT_BUCKETS]);
+  const [bucketTitles, setBucketTitles] = useState<Record<string, string>>({
+    "0": "",
+    "1": "",
+    "2": "",
+    "3+": "",
+  });
+  const [bucketDefs, setBucketDefs] = useState<Record<string, string>>({ "0": "", "1": "", "2": "", "3+": "" });
   const [bucketExamples, setBucketExamples] = useState<Record<string, string[]>>({
     "0": [""],
     "1": [""],
-    "2-3": [""],
-    "4+": [""],
+    "2": [""],
+    "3+": [""],
   });
 
   const resetForm = () => {
@@ -117,8 +125,9 @@ export const AddCriterionDialog = ({
       { title: "", definition: "", examples: [""] },
       { title: "", definition: "", examples: [] },
     ]);
-    setBucketDefs({ "0": "", "1": "", "2-3": "", "4+": "" });
-    setBucketExamples({ "0": [""], "1": [""], "2-3": [""], "4+": [""] });
+    setBucketTitles({ "0": "", "1": "", "2": "", "3+": "" });
+    setBucketDefs({ "0": "", "1": "", "2": "", "3+": "" });
+    setBucketExamples({ "0": [""], "1": [""], "2": [""], "3+": [""] });
   };
 
   useEffect(() => {
@@ -181,10 +190,12 @@ export const AddCriterionDialog = ({
 
     const count = initialCriterion.eval_definition as {
       buckets?: string[];
+      bucket_titles?: Record<string, string>;
       bucket_definitions?: Record<string, string>;
       bucket_examples?: Record<string, string[]>;
     };
-    const nextBuckets = count.buckets?.length ? count.buckets : ["0", "1", "2-3", "4+"];
+    const nextBuckets = count.buckets?.length ? count.buckets : [...COUNT_BUCKETS];
+    setBucketTitles(Object.fromEntries(nextBuckets.map((bucket) => [bucket, count.bucket_titles?.[bucket] || ""])));
     setBucketDefs(Object.fromEntries(nextBuckets.map((bucket) => [bucket, count.bucket_definitions?.[bucket] || ""])));
     setBucketExamples(
       Object.fromEntries(nextBuckets.map((bucket) => [bucket, count.bucket_examples?.[bucket]?.length ? count.bucket_examples[bucket] : [""]])),
@@ -351,6 +362,7 @@ export const AddCriterionDialog = ({
 
     return {
       buckets,
+      bucket_titles: bucketTitles,
       bucket_definitions: bucketDefs,
       bucket_examples: Object.fromEntries(
         buckets.map((bucket) => [
@@ -617,21 +629,28 @@ export const AddCriterionDialog = ({
               )}
 
               {criteriaType === "numerical-count" && (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {buckets.map((bucket) => (
                     <div key={bucket} className="space-y-1.5 border-b pb-3 last:border-0 last:pb-0">
-                      <Label className="text-xs">Bucket: {bucket}</Label>
-                      <Input
-                        placeholder={`Definition for "${bucket}"`}
-                        value={bucketDefs[bucket] || ""}
-                        onChange={(e) => setBucketDefs((prev) => ({ ...prev, [bucket]: e.target.value }))}
-                      />
+                      <p className="text-xs font-medium text-muted-foreground">Count {bucket}</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          placeholder="Title (e.g. Excellent)"
+                          value={bucketTitles[bucket] || ""}
+                          onChange={(e) => setBucketTitles((prev) => ({ ...prev, [bucket]: e.target.value }))}
+                        />
+                        <Input
+                          placeholder="Definition"
+                          value={bucketDefs[bucket] || ""}
+                          onChange={(e) => setBucketDefs((prev) => ({ ...prev, [bucket]: e.target.value }))}
+                        />
+                      </div>
                       <div className="space-y-1.5">
                         {(bucketExamples[bucket] || []).map((example, index) => (
                           <div key={`${bucket}-${index}`} className="flex items-center gap-2">
                             <Input
                               className="flex-1 text-xs"
-                              placeholder={`Example ${index + 1} for "${bucket}"`}
+                              placeholder={`Example ${index + 1}`}
                               value={example}
                               onChange={(e) => updateBucketExample(bucket, index, e.target.value)}
                             />

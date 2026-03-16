@@ -34,8 +34,9 @@ interface ContentEntry {
 const EvaluatePage = () => {
   // Suite-based selection
   const [selectedSuite, setSelectedSuite] = useState<string>("");
-  const [selectedCopy, setSelectedCopy] = useState<string>("");
-  const [copySource, setCopySource] = useState<"library" | "import" | "paste">("paste");
+  const [runName, setRunName] = useState("");
+  const [runBrand, setRunBrand] = useState("");
+  const [copySource, setCopySource] = useState<"import" | "paste">("paste");
   const [customCopyName, setCustomCopyName] = useState("");
   const [contentEntries, setContentEntries] = useState<ContentEntry[]>([
     { id: 1, contentType: "Description", text: "" },
@@ -274,37 +275,36 @@ const EvaluatePage = () => {
   };
 
   const handleRunEval = () => {
-    const selectedLibraryCopy = MOCK_COPIES.find(c => c.id === selectedCopy) || null;
     const nonEmptyEntries = contentEntries.filter(entry => entry.text.trim());
-    const runtimeCopy = copySource === "library"
-      ? selectedLibraryCopy
-      : copySource === "import"
-        ? {
-            id: "custom-import-copy",
-            product_name: customCopyName.trim(),
-            content_type: "Description" as ContentType,
-            raw_text: importedCopyText,
-            metadata: { source_file: importFileName || undefined },
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          }
-        : {
-            id: "custom-paste-copy",
-            product_name: customCopyName.trim(),
-            content_type: nonEmptyEntries[0]?.contentType || contentEntries[0]?.contentType || "Description",
-            raw_text: nonEmptyEntries.map(entry => `[${entry.contentType}]\n${entry.text}`).join("\n\n"),
-            metadata: {
-              content_entries: nonEmptyEntries.map(entry => ({
-                content_type: entry.contentType,
-                raw_text: entry.text,
-                file_name: entry.fileName,
-              })),
-            },
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
+    const runtimeCopy = copySource === "import"
+      ? {
+          id: "custom-import-copy",
+          product_name: customCopyName.trim(),
+          content_type: "Description" as ContentType,
+          raw_text: importedCopyText,
+          metadata: { source_file: importFileName || undefined },
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+      : {
+          id: "custom-paste-copy",
+          product_name: customCopyName.trim(),
+          content_type: nonEmptyEntries[0]?.contentType || contentEntries[0]?.contentType || "Description",
+          raw_text: nonEmptyEntries.map(entry => `[${entry.contentType}]\n${entry.text}`).join("\n\n"),
+          metadata: {
+            content_entries: nonEmptyEntries.map(entry => ({
+              content_type: entry.contentType,
+              raw_text: entry.text,
+              file_name: entry.fileName,
+            })),
+          },
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
 
     console.log("Running evaluation", {
+      runName: runName.trim() || null,
+      brand: runBrand.trim() || null,
       mode: selectionMode,
       suite: selectedSuite,
       copy: runtimeCopy,
@@ -312,11 +312,9 @@ const EvaluatePage = () => {
     });
   };
 
-  const canRun = (copySource === "library"
-    ? !!selectedCopy
-    : copySource === "import"
-      ? !!importedCopyText.trim()
-      : !!customCopyName.trim() && contentEntries.some(entry => entry.text.trim())) && (
+  const canRun = (copySource === "import"
+    ? !!importedCopyText.trim()
+    : !!customCopyName.trim() && contentEntries.some(entry => entry.text.trim())) && (
     selectionMode === "suite" ? !!selectedSuite : hierarchyFiltered.length > 0
   );
 
@@ -394,26 +392,33 @@ const EvaluatePage = () => {
           <CardTitle className="text-base">New Evaluation Run</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Evaluation Title</label>
+              <Input
+                placeholder="e.g. March PDP QA Evaluation"
+                value={runName}
+                onChange={(e) => setRunName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Brand</label>
+              <Input
+                placeholder="Type brand"
+                value={runBrand}
+                onChange={(e) => setRunBrand(e.target.value)}
+              />
+            </div>
+          </div>
+
           {/* Product copy selection — always visible */}
           <div className="space-y-2">
             <label className="text-xs font-medium text-muted-foreground">Product Copy</label>
-            <Tabs value={copySource} onValueChange={(v) => setCopySource(v as "library" | "import" | "paste")}>
+            <Tabs value={copySource} onValueChange={(v) => setCopySource(v as "import" | "paste")}>
               <TabsList>
-                <TabsTrigger value="library">Library</TabsTrigger>
                 <TabsTrigger value="import">Import</TabsTrigger>
                 <TabsTrigger value="paste">Paste</TabsTrigger>
               </TabsList>
-
-              <TabsContent value="library" className="mt-2 max-w-md">
-                <Select value={selectedCopy} onValueChange={setSelectedCopy}>
-                  <SelectTrigger><SelectValue placeholder="Select copy" /></SelectTrigger>
-                  <SelectContent>
-                    {MOCK_COPIES.map(c => (
-                      <SelectItem key={c.id} value={c.id}>{c.product_name} ({c.content_type})</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </TabsContent>
 
               <TabsContent value="import" className="mt-2 space-y-3">
                 <p className="text-xs text-muted-foreground">

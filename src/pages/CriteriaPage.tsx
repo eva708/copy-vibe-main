@@ -103,6 +103,7 @@ const CriterionDefinitionsTable = ({ criterion }: { criterion: Criterion }) => {
 
   const definition = criterion.eval_definition as {
     buckets?: string[];
+    bucket_titles?: Record<string, string>;
     bucket_definitions?: Record<string, string>;
     bucket_examples?: Record<string, string[]>;
   };
@@ -122,7 +123,7 @@ const CriterionDefinitionsTable = ({ criterion }: { criterion: Criterion }) => {
           buckets.map((bucket) => (
             <TableRow key={bucket}>
               <TableCell className="py-2 font-medium">{bucket}</TableCell>
-              <TableCell className="py-2">—</TableCell>
+              <TableCell className="py-2">{definition.bucket_titles?.[bucket] || "—"}</TableCell>
               <TableCell className="py-2">{definition.bucket_definitions?.[bucket] || "—"}</TableCell>
               <TableCell className="py-2">{definition.bucket_examples?.[bucket]?.filter(Boolean).join("; ") || "—"}</TableCell>
             </TableRow>

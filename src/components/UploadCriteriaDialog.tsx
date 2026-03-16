@@ -151,9 +151,10 @@ const parseEvalDefinition = (value: unknown, criteriaType: CriteriaType) => {
   }
 
   return {
-    buckets: ["0", "1", "2-3", "4+"],
-    bucket_definitions: { "0": "", "1": "", "2-3": "", "4+": "" },
-    bucket_examples: { "0": [], "1": [], "2-3": [], "4+": [] },
+    buckets: ["0", "1", "2", "3+"],
+    bucket_titles: { "0": "", "1": "", "2": "", "3+": "" },
+    bucket_definitions: { "0": "", "1": "", "2": "", "3+": "" },
+    bucket_examples: { "0": [], "1": [], "2": [], "3+": [] },
   };
 };
 
