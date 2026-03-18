@@ -20,8 +20,14 @@ export const MOCK_CRITERIA: Criterion[] = [
     eval_definition: {
       definition_yes: "The product type (e.g., 'wireless earbuds', 'yoga mat') is clearly mentioned.",
       definition_no: "The product type is missing or vague.",
-      yes_examples: ["ProFit Wireless Earbuds X3 with ANC", "EcoFlex Yoga Mat - Non-Slip"],
-      no_examples: ["ProFit X3", "Premium Quality Product"],
+      yes_examples: [
+        "ProFit Wireless Earbuds X3 with ANC, multipoint pairing, and IPX5 sweat resistance for all-day commuting.",
+        "EcoFlex Yoga Mat - Non-Slip, extra wide, and dual-density cushioning for joint support during long sessions.",
+      ],
+      no_examples: [
+        "ProFit X3",
+        "Premium Quality Product with no clear product type, no use-case context, and no specific category language.",
+      ],
     },
     weight: 1.0,
     active: true,
@@ -41,8 +47,12 @@ export const MOCK_CRITERIA: Criterion[] = [
     eval_definition: {
       definition_yes: "Benefits are clearly articulated from the customer's perspective.",
       definition_no: "Only features are listed without customer benefit framing.",
-      yes_examples: ["Keeps your coffee hot for 8 hours so your commute stays hassle-free."],
-      no_examples: ["Stainless steel body with 500ml capacity and screw cap."],
+      yes_examples: [
+        "Keeps your coffee hot for 8 hours so your commute stays hassle-free, without needing reheating at work or in transit.",
+      ],
+      no_examples: [
+        "Stainless steel body with 500ml capacity and screw cap, listed as specs only with no explanation of customer outcome or convenience.",
+      ],
     },
     weight: 1.2,
     active: true,
@@ -60,9 +70,9 @@ export const MOCK_CRITERIA: Criterion[] = [
     criteria_definition: "Claims are supported by credible brand or third-party references.",
     criteria_type: "numerical-scale",
     eval_definition: {
-      score_1: { title: "Non-compliant", definition: "Contains unsupported health or performance claims.", example_1: "'Cures back pain instantly'", example_2: "'FDA approved' without evidence" },
-      score_2: { title: "Partially compliant", definition: "Some claims lack proper substantiation.", example_1: "'Clinically tested' without source", example_2: "'Doctor recommended' without attribution" },
-      score_3: { title: "Mostly compliant", definition: "Most claims are properly supported.", example_1: "'Dermatologist tested (study, 2024)'", example_2: "'BPA-free certified by SGS'" },
+      score_1: { title: "Non-compliant", definition: "Contains unsupported health or performance claims.", example_1: "'Cures back pain instantly' with no citation, study details, or qualifying language provided anywhere in the copy.", example_2: "'FDA approved' without evidence, certificate number, or approved product class context." },
+      score_2: { title: "Partially compliant", definition: "Some claims lack proper substantiation.", example_1: "'Clinically tested' without source, sample size, methodology, or date.", example_2: "'Doctor recommended' without attribution to organization, practitioner credentials, or published review." },
+      score_3: { title: "Mostly compliant", definition: "Most claims are properly supported.", example_1: "'Dermatologist tested (study, 2024)' with summary findings and linked method notes.", example_2: "'BPA-free certified by SGS' with certificate identifier and testing standard." },
       score_4: { title: "Fully compliant", definition: "All claims are verifiable and properly attributed." },
     },
     weight: 1.5,
@@ -81,18 +91,18 @@ export const MOCK_CRITERIA: Criterion[] = [
     criteria_definition: "Number of SEO keywords naturally included in the copy.",
     criteria_type: "numerical-count",
     eval_definition: {
-      buckets: ["0", "1", "2-3", "4+"],
+      buckets: ["0", "1", "2", "3+"],
       bucket_definitions: {
         "0": "No relevant keywords detected.",
         "1": "Only one keyword present.",
-        "2-3": "Good keyword coverage without stuffing.",
-        "4+": "Excellent keyword integration.",
+        "2": "Good keyword coverage without stuffing.",
+        "3+": "Excellent keyword integration.",
       },
       bucket_examples: {
-        "0": ["\"Great quality product\" (no target keyword)"],
-        "1": ["\"Wireless earbuds with long battery\""],
-        "2-3": ["\"Wireless earbuds with noise cancelling and Bluetooth 5.3\""],
-        "4+": ["\"Wireless earbuds, Bluetooth 5.3, ANC, deep bass, IPX5 waterproof\""],
+        "0": ["\"Great quality product\" with broad language only and no category-specific search terms for discoverability."],
+        "1": ["\"Wireless earbuds with long battery\" including just one obvious keyword but limited long-tail query coverage."],
+        "2": ["\"Wireless earbuds with noise cancelling and Bluetooth 5.3\" including two clear target terms used naturally."],
+        "3+": ["\"Wireless earbuds, Bluetooth 5.3, ANC, deep bass, IPX5 waterproof\" covering multiple high-intent keywords without obvious stuffing."],
       },
     },
     weight: 0.8,
@@ -155,8 +165,12 @@ export const MOCK_CRITERIA: Criterion[] = [
     eval_definition: {
       definition_yes: "Language and emphasis align with target customer needs.",
       definition_no: "Copy is generic and not audience-specific.",
-      yes_examples: ["Designed for daily commuters who need all-day comfort."],
-      no_examples: ["A great product for everyone."],
+      yes_examples: [
+        "Designed for daily commuters who need all-day comfort, fast pairing, and reliable battery life between meetings and travel.",
+      ],
+      no_examples: [
+        "A great product for everyone, every lifestyle, and every use case, with no audience-specific language or differentiated benefit.",
+      ],
     },
     weight: 1.0,
     active: true,
@@ -195,18 +209,18 @@ export const MOCK_CRITERIA: Criterion[] = [
     criteria_definition: "The copy includes an appropriate number of distinct customer benefits.",
     criteria_type: "numerical-count",
     eval_definition: {
-      buckets: ["0", "1", "2-3", "4+"],
+      buckets: ["0", "1", "2", "3+"],
       bucket_definitions: {
         "0": "No clear benefits are present.",
         "1": "Only one clear benefit is present.",
-        "2-3": "Good number of benefits with clarity.",
-        "4+": "Excellent breadth of benefits without clutter.",
+        "2": "Good number of benefits with clarity.",
+        "3+": "Excellent breadth of benefits without clutter.",
       },
       bucket_examples: {
-        "0": ["Only technical specs listed."],
-        "1": ["Mentions comfort only."],
-        "2-3": ["Mentions comfort, durability, and portability."],
-        "4+": ["Mentions comfort, durability, portability, and easy maintenance."],
+        "0": ["Only technical specs listed, with no statement of practical user outcomes or everyday shopper benefit."],
+        "1": ["Mentions comfort only, without connecting it to commute, exercise, travel, or other real usage contexts."],
+        "2": ["Mentions comfort, durability, and portability with clear but concise links to day-to-day customer value."],
+        "3+": ["Mentions comfort, durability, portability, and easy maintenance, each tied to a specific shopper use case and buying motivation."],
       },
     },
     weight: 0.9,

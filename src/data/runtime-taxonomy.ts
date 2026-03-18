@@ -8,6 +8,12 @@ const TAXONOMY_STORAGE_KEY = "copyvibe.taxonomy";
 const normalizeTag = (value: string) => value.trim().replace(/\s+/g, " ");
 const uniqueTags = (values: string[]) => Array.from(new Set(values.map(normalizeTag).filter(Boolean))).sort((a, b) => a.localeCompare(b));
 const normalizeContextValue = (value: string) => (value === "General" ? "Universal" : value);
+const COUNT_BUCKETS = ["0", "1", "2", "3+"] as const;
+const LEGACY_COUNT_BUCKET_MAP: Record<string, string> = {
+  "2-3": "2",
+  "4+": "3+",
+};
+const normalizeCountBucket = (bucket: string) => LEGACY_COUNT_BUCKET_MAP[bucket] || bucket;
 
 export interface ManagedTaxonomy {
   contexts: string[];
@@ -160,21 +166,68 @@ const deriveBranchTags = (criteria: Criterion[]) => {
 
 const mapLegacyCriterionFields = (criterion: Criterion): Criterion => {
   const normalizedContext = normalizeContextValue(criterion.context);
-  const nextCriterion = normalizedContext === criterion.context
+  let nextCriterion = normalizedContext === criterion.context
     ? criterion
     : { ...criterion, context: normalizedContext };
 
   const customTags = nextCriterion.custom_tags || {};
   if (nextCriterion.context === "Brand" && !nextCriterion.brand_tag && customTags.Brand?.[0]) {
-    return { ...nextCriterion, brand_tag: customTags.Brand[0] };
+    nextCriterion = { ...nextCriterion, brand_tag: customTags.Brand[0] };
   }
   if (nextCriterion.context === "Industry" && !nextCriterion.industry_tag && customTags.Industry?.[0]) {
-    return { ...nextCriterion, industry_tag: customTags.Industry[0] };
+    nextCriterion = { ...nextCriterion, industry_tag: customTags.Industry[0] };
   }
   if (nextCriterion.context === "Marketplace" && !nextCriterion.marketplace_tag && customTags.Marketplace?.[0]) {
-    return { ...nextCriterion, marketplace_tag: customTags.Marketplace[0] };
+    nextCriterion = { ...nextCriterion, marketplace_tag: customTags.Marketplace[0] };
   }
-  return nextCriterion;
+  if (nextCriterion.criteria_type !== "numerical-count") return nextCriterion;
+
+  const definition = nextCriterion.eval_definition as {
+    buckets?: string[];
+    bucket_titles?: Record<string, string>;
+    bucket_definitions?: Record<string, string>;
+    bucket_examples?: Record<string, string[]>;
+  };
+
+  const normalizeStringMap = (input?: Record<string, string>) => {
+    if (!input) return undefined;
+    const next: Record<string, string> = {};
+    [...COUNT_BUCKETS, "2-3", "4+"].forEach((key) => {
+      const value = input[key];
+      if (value === undefined) return;
+      const normalizedKey = normalizeCountBucket(key);
+      // Prefer canonical values (e.g. "2") over legacy aliases (e.g. "2-3")
+      if (key === normalizedKey || next[normalizedKey] === undefined) next[normalizedKey] = value;
+    });
+    return next;
+  };
+
+  const normalizeExamplesMap = (input?: Record<string, string[]>) => {
+    if (!input) return undefined;
+    const next: Record<string, string[]> = {};
+    [...COUNT_BUCKETS, "2-3", "4+"].forEach((key) => {
+      const value = input[key];
+      if (value === undefined) return;
+      const normalizedKey = normalizeCountBucket(key);
+      if (key === normalizedKey || next[normalizedKey] === undefined) next[normalizedKey] = value;
+    });
+    return next;
+  };
+
+  const hasCountData =
+    (definition.buckets?.length || 0) > 0 ||
+    Boolean(definition.bucket_titles || definition.bucket_definitions || definition.bucket_examples);
+  const normalizedDefinition: Criterion["eval_definition"] = {
+    buckets: hasCountData ? [...COUNT_BUCKETS] : [],
+    bucket_titles: normalizeStringMap(definition.bucket_titles) || {},
+    bucket_definitions: normalizeStringMap(definition.bucket_definitions) || {},
+    bucket_examples: normalizeExamplesMap(definition.bucket_examples) || {},
+  };
+
+  return {
+    ...nextCriterion,
+    eval_definition: normalizedDefinition,
+  };
 };
 
 export const buildDefaultTaxonomy = (criteria: Criterion[] = MOCK_CRITERIA): ManagedTaxonomy => {

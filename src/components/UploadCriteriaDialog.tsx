@@ -309,7 +309,7 @@ export const UploadCriteriaDialog = ({ open, onOpenChange, onUpload }: UploadCri
                 for yes/no;
                 <code>{` {"score_1":{"title":"...","definition":"..."},"score_2":...,"score_3":...,"score_4":...} `}</code>
                 for scale;
-                <code>{` {"buckets":["0","1","2-3","4+"],"bucket_definitions":{"0":"..."},"bucket_examples":{"0":["..."]}} `}</code>
+                <code>{` {"buckets":["0","1","2","3+"],"bucket_definitions":{"0":"..."},"bucket_examples":{"0":["..."]}} `}</code>
                 for count.
               </p>
             </AlertDescription>

@@ -32,13 +32,64 @@ const getFilterLabel = (selected: Set<string>, options: string[], allLabel: stri
   if (selected.size === 1) return [...selected][0];
   return `${selected.size} selected`;
 };
+const EXAMPLES_PREVIEW_LENGTH = 70;
+const COUNT_BUCKETS = ["0", "1", "2", "3+"] as const;
+const LEGACY_COUNT_BUCKET_MAP: Record<string, string> = {
+  "2-3": "2",
+  "4+": "3+",
+};
+const normalizeCountBucket = (bucket: string) => LEGACY_COUNT_BUCKET_MAP[bucket] || bucket;
+const getCountBucketAliases = (bucket: string) =>
+  bucket === "2" ? ["2", "2-3"] : bucket === "3+" ? ["3+", "4+"] : [bucket];
+const resolveCountBucketValue = <T,>(map: Record<string, T> | undefined, bucket: string): T | undefined => {
+  if (!map) return undefined;
+  const aliases = getCountBucketAliases(bucket);
+  for (const key of aliases) {
+    if (Object.prototype.hasOwnProperty.call(map, key)) return map[key];
+  }
+  return undefined;
+};
 const getSampleBucketTitle = (bucket: string) => {
   if (bucket === "0") return "No Matches";
   if (bucket === "1") return "Minimal Matches";
-  if (bucket.includes("-")) return "Moderate Matches";
-  if (bucket.endsWith("+")) return "Strong Matches";
-  return `Bucket ${bucket}`;
+  if (bucket === "2" || bucket.includes("-")) return "Moderate Matches";
+  if (bucket === "3+" || bucket.endsWith("+")) return "Strong Matches";
+  return `Count ${bucket}`;
 };
+
+const ExamplesCell = ({ text }: { text?: string }) => {
+  const [expanded, setExpanded] = useState(false);
+  const normalized = text?.trim() || "";
+  if (!normalized) return <span>—</span>;
+
+  const canToggle = normalized.length > 45 || normalized.includes("; ");
+  const preview = canToggle ? `${normalized.slice(0, EXAMPLES_PREVIEW_LENGTH).trimEnd()}…` : normalized;
+  const display = expanded ? normalized : preview;
+
+  return (
+    <div className="grid grid-cols-[1fr_auto] items-start gap-1">
+      <div className="min-w-0">
+        <span className={expanded ? "whitespace-normal break-words" : "block truncate"} title={normalized}>
+          {display}
+        </span>
+      </div>
+      {canToggle && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-5 w-5 shrink-0 text-muted-foreground"
+          aria-label={expanded ? "Collapse examples" : "Expand examples"}
+          onClick={() => setExpanded((prev) => !prev)}
+        >
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+        </Button>
+      )}
+    </div>
+  );
+};
+const CRITERIA_TABLE_CLASS =
+  "w-full table-fixed border rounded-md [&_th:nth-child(1)]:w-[120px] [&_td:nth-child(1)]:w-[120px] [&_th:nth-child(2)]:w-[220px] [&_td:nth-child(2)]:w-[220px] [&_th:nth-child(3)]:w-[560px] [&_td:nth-child(3)]:w-[560px] [&_tbody_tr]:h-12 [&_tbody_td]:py-2 [&_tbody_td:nth-child(-n+3)]:whitespace-nowrap [&_tbody_td:nth-child(-n+3)]:overflow-hidden [&_tbody_td:nth-child(-n+3)]:text-ellipsis";
 
 const CriterionDefinitionsTable = ({ criterion }: { criterion: Criterion }) => {
   if (criterion.criteria_type === "yes-no") {
@@ -51,7 +102,7 @@ const CriterionDefinitionsTable = ({ criterion }: { criterion: Criterion }) => {
     const yesExamples = definition.yes_examples?.filter(Boolean).join("; ");
     const noExamples = definition.no_examples?.filter(Boolean).join("; ");
     return (
-      <Table className="border rounded-md">
+      <Table className={CRITERIA_TABLE_CLASS}>
         <TableHeader>
           <TableRow>
             <TableHead className="h-9 py-2 w-[120px]">Score</TableHead>
@@ -65,13 +116,13 @@ const CriterionDefinitionsTable = ({ criterion }: { criterion: Criterion }) => {
             <TableCell className="py-2 font-medium">Yes</TableCell>
             <TableCell className="py-2">Criterion Met</TableCell>
             <TableCell className="py-2">{definition.definition_yes || "—"}</TableCell>
-            <TableCell className="py-2">{yesExamples || "—"}</TableCell>
+            <TableCell className="py-2"><ExamplesCell text={yesExamples} /></TableCell>
           </TableRow>
           <TableRow>
             <TableCell className="py-2 font-medium">No</TableCell>
             <TableCell className="py-2">Criterion Not Met</TableCell>
             <TableCell className="py-2">{definition.definition_no || "—"}</TableCell>
-            <TableCell className="py-2">{noExamples || "—"}</TableCell>
+            <TableCell className="py-2"><ExamplesCell text={noExamples} /></TableCell>
           </TableRow>
         </TableBody>
       </Table>
@@ -81,7 +132,7 @@ const CriterionDefinitionsTable = ({ criterion }: { criterion: Criterion }) => {
   if (criterion.criteria_type === "numerical-scale") {
     const definition = criterion.eval_definition as Record<string, { title?: string; definition?: string; example_1?: string; example_2?: string }>;
     return (
-      <Table className="border rounded-md">
+      <Table className={CRITERIA_TABLE_CLASS}>
         <TableHeader>
           <TableRow>
             <TableHead className="h-9 py-2 w-[120px]">Score</TableHead>
@@ -99,7 +150,7 @@ const CriterionDefinitionsTable = ({ criterion }: { criterion: Criterion }) => {
                 <TableCell className="py-2 font-medium">{score}</TableCell>
                 <TableCell className="py-2">{row?.title || "—"}</TableCell>
                 <TableCell className="py-2">{row?.definition || "—"}</TableCell>
-                <TableCell className="py-2">{examples || "—"}</TableCell>
+                <TableCell className="py-2"><ExamplesCell text={examples} /></TableCell>
               </TableRow>
             );
           })}
@@ -114,12 +165,15 @@ const CriterionDefinitionsTable = ({ criterion }: { criterion: Criterion }) => {
     bucket_definitions?: Record<string, string>;
     bucket_examples?: Record<string, string[]>;
   };
-  const buckets = definition.buckets || [];
+  const rawBuckets = definition.buckets || [];
+  const hasCountData = rawBuckets.length > 0 || Boolean(definition.bucket_titles || definition.bucket_definitions || definition.bucket_examples);
+  const normalizedBucketSet = new Set(rawBuckets.map((bucket) => normalizeCountBucket(bucket)).filter(Boolean));
+  const buckets = hasCountData ? [...COUNT_BUCKETS].filter((bucket) => normalizedBucketSet.size === 0 || normalizedBucketSet.has(bucket)) : [];
   return (
-    <Table className="border rounded-md">
+    <Table className={CRITERIA_TABLE_CLASS}>
       <TableHeader>
         <TableRow>
-          <TableHead className="h-9 py-2 w-[120px]">Bucket</TableHead>
+          <TableHead className="h-9 py-2 w-[120px]">Count</TableHead>
           <TableHead className="h-9 py-2 w-[220px]">Title</TableHead>
           <TableHead className="h-9 py-2">Definition</TableHead>
           <TableHead className="h-9 py-2">Examples</TableHead>
@@ -130,9 +184,11 @@ const CriterionDefinitionsTable = ({ criterion }: { criterion: Criterion }) => {
           buckets.map((bucket) => (
             <TableRow key={bucket}>
               <TableCell className="py-2 font-medium">{bucket}</TableCell>
-              <TableCell className="py-2">{definition.bucket_titles?.[bucket]?.trim() || getSampleBucketTitle(bucket)}</TableCell>
-              <TableCell className="py-2">{definition.bucket_definitions?.[bucket] || "—"}</TableCell>
-              <TableCell className="py-2">{definition.bucket_examples?.[bucket]?.filter(Boolean).join("; ") || "—"}</TableCell>
+              <TableCell className="py-2">{resolveCountBucketValue(definition.bucket_titles, bucket)?.trim() || getSampleBucketTitle(bucket)}</TableCell>
+              <TableCell className="py-2">{resolveCountBucketValue(definition.bucket_definitions, bucket) || "—"}</TableCell>
+              <TableCell className="py-2">
+                <ExamplesCell text={resolveCountBucketValue(definition.bucket_examples, bucket)?.filter(Boolean).join("; ")} />
+              </TableCell>
             </TableRow>
           ))
         ) : (
